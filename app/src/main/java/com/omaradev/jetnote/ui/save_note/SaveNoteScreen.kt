@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,27 +23,51 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.omaradev.jetnote.R
+import com.omaradev.jetnote.domain.color.ColorModel
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterialApi::class)
 @SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @Composable
 fun SaveNoteScreen(onClickOnBackIcon: () -> Unit) {
     val titleState = rememberSaveable { mutableStateOf("") }
     val contentState = rememberSaveable { mutableStateOf("") }
     val switchState = rememberSaveable { mutableStateOf(true) }
+    val coroutineScope = rememberCoroutineScope()
+    val pickColorDialogState = rememberModalBottomSheetState(
+        initialValue = ModalBottomSheetValue.Hidden,
+        confirmStateChange = { it != ModalBottomSheetValue.HalfExpanded },
+        skipHalfExpanded = true
+    )
+
+    val colorsPicker: ArrayList<ColorModel> = arrayListOf(
+        ColorModel(0, "Green", R.color.colorPrimary),
+        ColorModel(1, "White", R.color.white),
+        ColorModel(2, "Black", R.color.black),
+        ColorModel(3, "Gray", R.color.gray),
+        ColorModel(4, "Red", R.color.red),
+        ColorModel(5, "Orange", R.color.orange),
+    )
+
+    PickColorDialog(colorsPicker, pickColorDialogState)
 
     Scaffold(
         backgroundColor = colorResource(id = R.color.background_color)
     ) {
         Column {
-            TopAppBar(navigationIcon = {
-                IconButton(onClick = { onClickOnBackIcon() }) {
-                    Icon(
-                        imageVector = Icons.Filled.ArrowBack, contentDescription = "Arrow Back"
-                    )
-                }
-            }, title = {
-                Text(text = "Save Note")
-            }, backgroundColor = colorResource(id = R.color.colorPrimary)
+            TopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = { onClickOnBackIcon() }) {
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack, contentDescription = "Arrow Back"
+                        )
+                    }
+                },
+                title = {
+                    Text(text = "Save Note")
+                },
+                backgroundColor = colorResource(id = R.color.colorPrimary),
+                contentColor = Color.White
             )
 
             InputText("Title Of Note", titleState)
@@ -97,12 +122,28 @@ fun SaveNoteScreen(onClickOnBackIcon: () -> Unit) {
                     .background(color = colorResource(id = R.color.white), shape = CircleShape)
                     .align(Alignment.CenterEnd)
                     .size(40.dp)
-                    .clickable {}
+                    .clickable {
+                        coroutineScope.launch {
+                            pickColorDialogState.show()
+                        }
+                    }
                     .border(width = 1.dp, color = Color.Black, shape = CircleShape))
             }
 
             Spacer(modifier = Modifier.padding(8.dp))
 
+            Button(
+                onClick = {},
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 8.dp, end = 8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = colorResource(id = R.color.colorPrimary),
+                    contentColor = Color.White
+                )
+            ) {
+                Text(text = "Save")
+            }
         }
     }
 }
@@ -130,4 +171,25 @@ fun InputText(label: String, inputState: MutableState<String>) {
             unfocusedLabelColor = Color.Black.copy(.5f)
         ),
     )
+}
+
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+fun PickColorDialog(
+    colorsPicker: ArrayList<ColorModel>,
+    pickColorDialogState: ModalBottomSheetState
+) {
+    ModalBottomSheetLayout(
+        sheetState = pickColorDialogState,
+        sheetContent = {
+            Column {
+                Text(text = "test")
+                Text(text = "test")
+                Text(text = "test")
+                Text(text = "test")
+            }
+        },
+        sheetBackgroundColor = colorResource(id = R.color.white),
+        sheetShape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp)
+    ){}
 }
