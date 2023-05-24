@@ -1,10 +1,13 @@
 package com.omaradev.jetnote.ui.save_note
 
 import android.annotation.SuppressLint
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -18,38 +21,51 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.MutableLiveData
+import com.omaradev.jetnote.MainViewModel
 import com.omaradev.jetnote.R
 import com.omaradev.jetnote.domain.color.ColorModel
+import com.omaradev.jetnote.ui.NoteFormState
+import com.omaradev.jetnote.ui.save_note.component.ColorItem
+import com.omaradev.jetnote.ui.utils.ErrorNote
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterialApi::class)
-@SuppressLint("UnusedMaterialScaffoldPaddingParameter")
+@SuppressLint(
+    "UnusedMaterialScaffoldPaddingParameter", "CoroutineCreationDuringComposition",
+    "UnrememberedMutableState"
+)
 @Composable
-fun SaveNoteScreen(onClickOnBackIcon: () -> Unit) {
+fun SaveNoteScreen(onClickOnBackIcon: () -> Unit, viewModel: MainViewModel) {
     val titleState = rememberSaveable { mutableStateOf("") }
     val contentState = rememberSaveable { mutableStateOf("") }
     val switchState = rememberSaveable { mutableStateOf(true) }
-    val coroutineScope = rememberCoroutineScope()
-    val pickColorDialogState = rememberModalBottomSheetState(
-        initialValue = ModalBottomSheetValue.Hidden,
-        confirmStateChange = { it != ModalBottomSheetValue.HalfExpanded },
-        skipHalfExpanded = true
-    )
 
-    val colorsPicker: ArrayList<ColorModel> = arrayListOf(
+    val noteFormState = MutableLiveData<NoteFormState>()
+
+    val colorModelState = mutableStateOf(ColorModel())
+
+    val coroutineScope = rememberCoroutineScope()
+    val pickColorDialogState =
+        rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden,
+            confirmStateChange = { it != ModalBottomSheetValue.HalfExpanded })
+
+    val colorsList: ArrayList<ColorModel> = arrayListOf(
         ColorModel(0, "Green", R.color.colorPrimary),
-        ColorModel(1, "White", R.color.white),
+        ColorModel(1, "Blue", androidx.compose.ui.R.color.vector_tint_color),
         ColorModel(2, "Black", R.color.black),
         ColorModel(3, "Gray", R.color.gray),
         ColorModel(4, "Red", R.color.red),
         ColorModel(5, "Orange", R.color.orange),
     )
 
-    PickColorDialog(colorsPicker, pickColorDialogState)
 
     Scaffold(
         backgroundColor = colorResource(id = R.color.background_color)
@@ -71,13 +87,17 @@ fun SaveNoteScreen(onClickOnBackIcon: () -> Unit) {
             )
 
             InputText("Title Of Note", titleState)
+            ErrorNote(stringResource(id = R.string.required_field))
 
             InputText("Content Of Note", contentState)
+            noteFormState.value?.contentNoteError?.let { ErrorNote(stringResource(id = it)) }
 
             Spacer(modifier = Modifier.padding(8.dp))
 
             Box(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .layoutId("SaveNote")
             ) {
                 Text(
                     text = "Can Note Be CheckOff ??",
@@ -119,7 +139,11 @@ fun SaveNoteScreen(onClickOnBackIcon: () -> Unit) {
 
                 Box(modifier = Modifier
                     .padding(8.dp)
-                    .background(color = colorResource(id = R.color.white), shape = CircleShape)
+                    .background(
+                        color = colorResource(
+                            id = colorModelState.value.colorId ?: R.color.white
+                        ), shape = CircleShape
+                    )
                     .align(Alignment.CenterEnd)
                     .size(40.dp)
                     .clickable {
@@ -129,11 +153,21 @@ fun SaveNoteScreen(onClickOnBackIcon: () -> Unit) {
                     }
                     .border(width = 1.dp, color = Color.Black, shape = CircleShape))
             }
+            noteFormState.value?.colorNoteError?.let { ErrorNote(stringResource(id = it)) }
+
 
             Spacer(modifier = Modifier.padding(8.dp))
 
             Button(
-                onClick = {},
+                onClick = {
+                    viewModel.validateSavingNote(
+                        titleState.value,
+                        contentState.value,
+                        colorModelState.value.colorId
+                    ).observeForever {
+                        noteFormState.postValue(it)
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = 8.dp, end = 8.dp),
@@ -144,6 +178,11 @@ fun SaveNoteScreen(onClickOnBackIcon: () -> Unit) {
             ) {
                 Text(text = "Save")
             }
+        }
+
+        PickColorDialog(colorsList, pickColorDialogState) {
+            coroutineScope.launch { pickColorDialogState.hide() }
+            colorModelState.value = it
         }
     }
 }
@@ -173,23 +212,32 @@ fun InputText(label: String, inputState: MutableState<String>) {
     )
 }
 
+@SuppressLint("CoroutineCreationDuringComposition")
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun PickColorDialog(
-    colorsPicker: ArrayList<ColorModel>,
-    pickColorDialogState: ModalBottomSheetState
+    colorsList: ArrayList<ColorModel>,
+    modalSheetState: ModalBottomSheetState,
+    onSelectColor: (ColorModel) -> Unit
 ) {
+    val coroutineScope = rememberCoroutineScope()
+
+    BackHandler(modalSheetState.isVisible) {
+        coroutineScope.launch { modalSheetState.hide() }
+    }
     ModalBottomSheetLayout(
-        sheetState = pickColorDialogState,
+        sheetState = modalSheetState,
+        sheetShape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
         sheetContent = {
-            Column {
-                Text(text = "test")
-                Text(text = "test")
-                Text(text = "test")
-                Text(text = "test")
+            LazyColumn() {
+                items(items = colorsList) {
+                    ColorItem(colorModel = it) { colorModel ->
+                        onSelectColor(colorModel)
+                    }
+                }
             }
         },
-        sheetBackgroundColor = colorResource(id = R.color.white),
-        sheetShape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp)
-    ){}
+        sheetBackgroundColor = Color.White,
+        modifier = Modifier.padding(bottom = 8.dp)
+    ) {}
 }

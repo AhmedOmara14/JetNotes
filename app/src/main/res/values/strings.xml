@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">JetNote</string>
+    <string name="required_field">Required Field</string>
 </resources>

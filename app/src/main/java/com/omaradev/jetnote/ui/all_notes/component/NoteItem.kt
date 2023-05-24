@@ -37,14 +37,17 @@ fun NoteItem(note: Note, onClickNote: (Note) -> Unit, onChangeCheckedNote: (Note
         ) {
         val checkedState = rememberSaveable { mutableStateOf(note.isChecked) }
 
-        Box(
-            modifier = Modifier
-                .padding(8.dp)
-                .background(color = colorResource(id = note.color.colorId), shape = CircleShape)
-                .size(60.dp)
-                .clickable { onClickNote(note) }
-                .border(width = 1.dp, color = Color.Black, shape = CircleShape)
-        )
+        note.color.colorId?.let {
+            Box(
+                modifier = Modifier
+                    .padding(8.dp)
+                    .background(color = colorResource(id = it), shape = CircleShape)
+                    .size(60.dp)
+                    .clickable { onClickNote(note) }
+                    .border(width = 1.dp, color = Color.Black, shape = CircleShape)
+            )
+        }
+
 
         Spacer(modifier = Modifier.padding(10.dp))
 

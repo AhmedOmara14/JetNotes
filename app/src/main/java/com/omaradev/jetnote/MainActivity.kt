@@ -29,6 +29,7 @@ class MainActivity : ComponentActivity() {
                 val scaffoldState = rememberScaffoldState()
                 val drawerState = scaffoldState.drawerState
                 val coroutineScope = rememberCoroutineScope()
+                val viewModel = MainViewModel()
 
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
@@ -54,7 +55,7 @@ class MainActivity : ComponentActivity() {
                             composable(Screen.SaveNote.routing) {
                                 SaveNoteScreen(onClickOnBackIcon = {
                                     navController.navigateUp()
-                                })
+                                }, viewModel = viewModel )
                             }
 
                         }
