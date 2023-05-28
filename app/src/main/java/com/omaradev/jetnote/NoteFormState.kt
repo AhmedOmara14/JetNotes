@@ -1,10 +1,10 @@
-package com.omaradev.jetnote.ui
+package com.omaradev.jetnote
 
 /**
  * Data validation state of the  form.
  */
-data class NoteFormState(
-    var titleNoteError: Int? = null,
+class NoteFormState(
+    val titleNoteError: Int? = null,
     val contentNoteError: Int? = null,
     val colorNoteError: Int? = null
 )

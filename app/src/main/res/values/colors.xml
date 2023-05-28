@@ -13,6 +13,7 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="gray">#AAAAAA</color>
+    <color name="blue">#092DF4</color>
     <color name="red">#FF0303</color>
     <color name="orange">#DF3600</color>
     <color name="background_color">#F5F5F5</color>
