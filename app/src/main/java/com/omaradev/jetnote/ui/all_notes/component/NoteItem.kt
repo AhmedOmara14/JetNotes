@@ -21,7 +21,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.omaradev.jetnote.domain.all_notes.Note
+import com.omaradev.jetnote.domain.model.all_notes.Note
 
 @Composable
 fun NoteItem(note: Note, onClickNote: (Note) -> Unit, onChangeCheckedNote: (Note) -> Unit) {
@@ -37,7 +37,7 @@ fun NoteItem(note: Note, onClickNote: (Note) -> Unit, onChangeCheckedNote: (Note
         ) {
         val checkedState = rememberSaveable { mutableStateOf(note.isChecked) }
 
-        note.color.colorId?.let {
+        note.color?.colorId?.let {
             Box(
                 modifier = Modifier
                     .padding(8.dp)
@@ -52,16 +52,20 @@ fun NoteItem(note: Note, onClickNote: (Note) -> Unit, onChangeCheckedNote: (Note
         Spacer(modifier = Modifier.padding(10.dp))
 
         Column(Modifier.weight(1f)) {
-            Text(
-                text = note.noteTitle, style = TextStyle(
-                    color = Color.Black, fontSize = 18.sp, fontWeight = FontWeight.SemiBold
-                ), maxLines = 1
-            )
-            Text(
-                text = note.noteBody, style = TextStyle(
-                    color = Color.Gray, fontSize = 15.sp, fontWeight = FontWeight.Light
-                ), maxLines = 2
-            )
+            note.noteTitle?.let {
+                Text(
+                    text = it, style = TextStyle(
+                        color = Color.Black, fontSize = 18.sp, fontWeight = FontWeight.SemiBold
+                    ), maxLines = 1
+                )
+            }
+            note.noteBody?.let {
+                Text(
+                    text = it, style = TextStyle(
+                        color = Color.Gray, fontSize = 15.sp, fontWeight = FontWeight.Light
+                    ), maxLines = 2
+                )
+            }
         }
 
         Spacer(modifier = Modifier.padding(10.dp))

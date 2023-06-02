@@ -1,4 +1,4 @@
-package com.omaradev.jetnote
+package com.omaradev.jetnote.ui.save_note
 
 /**
  * Data validation state of the  form.

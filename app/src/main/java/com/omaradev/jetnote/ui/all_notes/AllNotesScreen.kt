@@ -11,21 +11,25 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
+import com.omaradev.jetnote.MainViewModel
 import com.omaradev.jetnote.R
-import com.omaradev.jetnote.domain.all_notes.Note
-import com.omaradev.jetnote.domain.color.ColorModel
 import com.omaradev.jetnote.ui.all_notes.component.NoteItem
 
 @SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @Composable
-fun AllNotesScreen(onOpenNavDrawer: () -> Unit, onClickSaveNote: () -> Unit) {
+fun AllNotesScreen(
+    onOpenNavDrawer: () -> Unit,
+    onClickSaveNote: () -> Unit,
+    viewModel: MainViewModel
+) {
     val context = LocalContext.current
+    val notes = viewModel.getAllNotes().collectAsState(initial = emptyList())
 
     Scaffold(
         backgroundColor = colorResource(id = R.color.background_color),
@@ -52,36 +56,8 @@ fun AllNotesScreen(onOpenNavDrawer: () -> Unit, onClickSaveNote: () -> Unit) {
                     Text(text = stringResource(id = R.string.app_name))
                 })
 
-            val list = arrayListOf(
-                Note(
-                    color = ColorModel(1, "", R.color.colorPrimary),
-                    noteTitle = "test title",
-                    noteBody = "test body",
-                    isChecked = false
-                ), Note(
-                    color = ColorModel(1, "", R.color.colorPrimary),
-                    noteTitle = "test title",
-                    noteBody = "test body",
-                    isChecked = false
-                ), Note(
-                    color = ColorModel(1, "", R.color.colorPrimary),
-                    noteTitle = "test title",
-                    noteBody = "test body",
-                    isChecked = false
-                ), Note(
-                    color = ColorModel(1, "", R.color.colorPrimary),
-                    noteTitle = "test title",
-                    noteBody = "test body",
-                    isChecked = true
-                ), Note(
-                    color = ColorModel(1, "", R.color.colorPrimary),
-                    noteTitle = "test title",
-                    noteBody = "test body",
-                    isChecked = true
-                )
-            )
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(items = list) {
+                items(items = notes.value) { it ->
                     NoteItem(note = it, onClickNote = {
                         Toast.makeText(context, it.noteTitle, Toast.LENGTH_SHORT).show()
                     }, onChangeCheckedNote = {

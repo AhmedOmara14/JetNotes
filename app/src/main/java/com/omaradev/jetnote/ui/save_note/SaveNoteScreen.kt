@@ -13,14 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,9 +25,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.omaradev.jetnote.MainViewModel
 import com.omaradev.jetnote.R
-import com.omaradev.jetnote.domain.color.ColorModel
+import com.omaradev.jetnote.domain.model.color.ColorModel
 import com.omaradev.jetnote.ui.save_note.component.ColorItem
 import com.omaradev.jetnote.ui.utils.ErrorNote
+import com.omaradev.jetnote.ui.utils.InputText
+import com.omaradev.jetnote.ui.utils.PickColorDialog
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -45,16 +40,15 @@ import kotlinx.coroutines.launch
 )
 @Composable
 fun SaveNoteScreen(onClickOnBackIcon: () -> Unit, viewModel: MainViewModel) {
-    val titleState = rememberSaveable { mutableStateOf("") }
-    val contentState = rememberSaveable { mutableStateOf("") }
-    val switchState = rememberSaveable { mutableStateOf(true) }
-    val colorModelState = rememberSaveable { mutableStateOf(ColorModel()) }
-
+    val titleState = mutableStateOf("")
+    val contentState = mutableStateOf("")
+    val switchState = mutableStateOf(true)
+    val colorModelState = mutableStateOf(ColorModel(0, ""))
+    val formState = mutableStateOf<NoteFormState?>(NoteFormState())
     val coroutineScope = rememberCoroutineScope()
-    val pickColorDialogState = rememberModalBottomSheetState(
-        initialValue = ModalBottomSheetValue.Hidden,
-        confirmStateChange = { it != ModalBottomSheetValue.HalfExpanded }
-    )
+    val pickColorDialogState =
+        rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden,
+            confirmValueChange = { it != ModalBottomSheetValue.HalfExpanded })
 
     val colorsList = remember {
         mutableStateListOf(
@@ -67,33 +61,30 @@ fun SaveNoteScreen(onClickOnBackIcon: () -> Unit, viewModel: MainViewModel) {
         )
     }
 
-    val formState = viewModel.formState.collectAsState()
 
     Scaffold(
         backgroundColor = colorResource(id = R.color.background_color)
     ) {
         Column {
-            TopAppBar(
-                navigationIcon = {
-                    IconButton(onClick = onClickOnBackIcon) {
-                        Icon(
-                            imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = "Arrow Back"
-                        )
-                    }
-                },
+            TopAppBar(navigationIcon = {
+                IconButton(onClick = onClickOnBackIcon) {
+                    Icon(
+                        imageVector = Icons.Filled.ArrowBack, contentDescription = "Arrow Back"
+                    )
+                }
+            },
                 title = { Text(text = "Save Note") },
                 backgroundColor = colorResource(id = R.color.colorPrimary),
                 contentColor = Color.White
             )
 
             InputText("Title Of Note", titleState)
-            formState.value.titleNoteError?.let {
+            formState.value?.titleNoteError?.let {
                 ErrorNote(stringResource(id = it))
             }
 
             InputText("Content Of Note", contentState)
-            formState.value.contentNoteError?.let {
+            formState.value?.contentNoteError?.let {
                 ErrorNote(stringResource(id = it))
             }
 
@@ -138,26 +129,23 @@ fun SaveNoteScreen(onClickOnBackIcon: () -> Unit, viewModel: MainViewModel) {
                         .align(Alignment.CenterStart)
                 )
 
-                Box(
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .background(
-                            color = colorResource(
-                                id = colorModelState.value.colorId ?: R.color.white
-                            ),
-                            shape = CircleShape
-                        )
-                        .align(Alignment.CenterEnd)
-                        .size(40.dp)
-                        .clickable {
-                            coroutineScope.launch {
-                                pickColorDialogState.show()
-                            }
+                Box(modifier = Modifier
+                    .padding(8.dp)
+                    .background(
+                        color = colorResource(
+                            id = colorModelState.value.colorId ?: R.color.white
+                        ), shape = CircleShape
+                    )
+                    .align(Alignment.CenterEnd)
+                    .size(40.dp)
+                    .clickable {
+                        coroutineScope.launch {
+                            pickColorDialogState.show()
                         }
-                        .border(width = 1.dp, color = Color.Black, shape = CircleShape)
-                )
+                    }
+                    .border(width = 1.dp, color = Color.Black, shape = CircleShape))
             }
-            formState.value.colorNoteError?.let {
+            formState.value?.colorNoteError?.let {
                 ErrorNote(stringResource(id = it))
             }
 
@@ -165,9 +153,22 @@ fun SaveNoteScreen(onClickOnBackIcon: () -> Unit, viewModel: MainViewModel) {
 
             Button(
                 onClick = {
-                    viewModel.validateSavingNote(
-                        titleState.value, contentState.value, colorModelState.value.colorId
-                    )
+                    coroutineScope.launch {
+                        viewModel.validateSavingNote(
+                            titleState.value,
+                            contentState.value,
+                            colorModelState.value.colorId,
+                            switchState.value
+                        ).collect {
+                            it?.let { formState.value = it } ?: kotlin.run {
+                                titleState.value = ""
+                                contentState.value = ""
+                                switchState.value = false
+                                colorModelState.value = ColorModel(0, "")
+                                formState.value = null
+                            }
+                        }
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -188,56 +189,5 @@ fun SaveNoteScreen(onClickOnBackIcon: () -> Unit, viewModel: MainViewModel) {
     }
 }
 
-@Composable
-fun InputText(label: String, inputState: MutableState<String>) {
-    TextField(
-        value = inputState.value,
-        onValueChange = { inputState.value = it },
-        label = { Text(text = label) },
-        modifier = Modifier
-            .padding(start = 8.dp, end = 8.dp, top = 8.dp)
-            .fillMaxWidth()
-            .background(
-                color = Color.Black.copy(alpha = .1f),
-                shape = RoundedCornerShape(4.dp)
-            ),
-        colors = TextFieldDefaults.textFieldColors(
-            backgroundColor = Color.Transparent,
-            cursorColor = Color.Black,
-            focusedIndicatorColor = Color.Transparent,
-            focusedLabelColor = Color.Black.copy(alpha = .5f),
-            textColor = Color.Black,
-            unfocusedLabelColor = Color.Black.copy(alpha = .5f)
-        )
-    )
-}
 
-@SuppressLint("CoroutineCreationDuringComposition")
-@OptIn(ExperimentalMaterialApi::class)
-@Composable
-fun PickColorDialog(
-    colorsList: List<ColorModel>,
-    modalSheetState: ModalBottomSheetState,
-    onSelectColor: (ColorModel) -> Unit
-) {
-    val coroutineScope = rememberCoroutineScope()
 
-    BackHandler(modalSheetState.isVisible) {
-        coroutineScope.launch { modalSheetState.hide() }
-    }
-    ModalBottomSheetLayout(
-        sheetState = modalSheetState,
-        sheetShape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
-        sheetContent = {
-            LazyColumn {
-                items(items = colorsList) { colorModel ->
-                    ColorItem(colorModel = colorModel) { selectedColorModel ->
-                        onSelectColor(selectedColorModel)
-                    }
-                }
-            }
-        },
-        sheetBackgroundColor = Color.White,
-        modifier = Modifier.padding(bottom = 8.dp)
-    ) {}
-}

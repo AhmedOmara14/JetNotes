@@ -14,7 +14,7 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.TextStyle
 
 import androidx.compose.ui.unit.dp
-import com.omaradev.jetnote.domain.color.ColorModel
+import com.omaradev.jetnote.domain.model.color.ColorModel
 
 @Composable
 fun ColorItem(colorModel: ColorModel, onSelectColor: (ColorModel) -> Unit) {
@@ -40,7 +40,8 @@ fun ColorItem(colorModel: ColorModel, onSelectColor: (ColorModel) -> Unit) {
             Text(
                 text = it,
                 modifier = Modifier.padding(start = 8.dp),
-                style = TextStyle()
+                style = TextStyle(),
+                color = Color.Black
             )
         }
     }
