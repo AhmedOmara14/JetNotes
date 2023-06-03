@@ -96,5 +96,4 @@ dependencies {
 
     //Shimmer
     implementation "com.valentinilk.shimmer:compose-shimmer:$shimmer_version"
-
 }

@@ -34,7 +34,7 @@ fun AllNotesScreen(
         mutableStateOf(true)
     }
     LaunchedEffect(key1 = true) {
-        delay(5000)
+        delay(2000)
         isLoading = false
     }
 
@@ -68,7 +68,9 @@ fun AllNotesScreen(
                     ShimmerNoteItem(isLoading = isLoading) {
                         NoteItem(note = it, onClickNote = {
                             onClickNoteItem(it)
-                        }, onChangeCheckedNote = {})
+                        }, onDeleteNote = {
+                            viewModel.deleteNote(it)
+                        })
                     }
                 }
             }
