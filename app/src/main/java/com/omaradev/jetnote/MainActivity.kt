@@ -10,9 +10,11 @@ import androidx.compose.material.Scaffold
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.omaradev.jetnote.routing.Screen
 import com.omaradev.jetnote.theme.JetNoteTheme
 import com.omaradev.jetnote.ui.AppDrawer
@@ -32,35 +34,48 @@ class MainActivity : ComponentActivity() {
                 val scaffoldState = rememberScaffoldState()
                 val drawerState = scaffoldState.drawerState
                 val coroutineScope = rememberCoroutineScope()
-                val viewModel:MainViewModel by viewModels()
+                val viewModel: MainViewModel by viewModels()
 
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
+                Scaffold(modifier = Modifier.fillMaxSize(),
                     scaffoldState = scaffoldState,
-                    drawerContent =
-                    {
+                    drawerContent = {
                         AppDrawer(Screen.Notes) {
                             coroutineScope.launch {
                                 drawerState.close()
                             }
                         }
-                    }, content = {
+                    },
+                    content = {
                         NavHost(
                             navController = navController, startDestination = Screen.Notes.routing
                         ) {
                             composable(Screen.Notes.routing) {
                                 AllNotesScreen(onClickSaveNote = {
-                                    navController.navigate(Screen.SaveNote.routing)
+                                    navController.navigate(Screen.SaveNote.routing + ("/${0}"))
                                 }, onOpenNavDrawer = {
                                     coroutineScope.launch { drawerState.open() }
-                                }, viewModel = viewModel)
+                                }, viewModel = viewModel, onClickNoteItem = { note ->
+                                    navController.navigate(Screen.SaveNote.routing + ("/${note.id}"))
+                                })
                             }
-                            composable(Screen.SaveNote.routing) {
-                                SaveNoteScreen(onClickOnBackIcon = {
-                                    navController.navigateUp()
-                                }, viewModel = viewModel )
+                            composable(
+                                route = Screen.SaveNote.routing + "/{noteId}",
+                                arguments = listOf(navArgument("noteId") {
+                                    defaultValue = 0
+                                    type = NavType.IntType
+                                    nullable = false
+                                })
+                            ) {
+                                it.arguments?.getInt("noteId")?.let { it1 ->
+                                    SaveNoteScreen(
+                                        onClickOnBackIcon = {
+                                            navController.navigateUp()
+                                        },
+                                        viewModel = viewModel,
+                                        noteId = it1
+                                    )
+                                }
                             }
-
                         }
                     })
             }

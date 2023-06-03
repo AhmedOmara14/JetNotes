@@ -19,12 +19,12 @@ class MainViewModel @Inject constructor(
     private val repository: NoteRepository
 ) : ViewModel() {
 
-    var note by mutableStateOf(Note())
+    var note by mutableStateOf(Note(color = null, noteTitle = null, noteBody = null))
 
     fun validateSavingNote(
-        title: String?, content: String?, colorId: Int?, switchValue: Boolean
+        id: Int?=0,title: String?, content: String?, colorId: Int?, switchValue: Boolean, isSave: Boolean
     ): MutableStateFlow<NoteFormState?> {
-        val formState:MutableStateFlow<NoteFormState?> = MutableStateFlow(NoteFormState())
+        val formState: MutableStateFlow<NoteFormState?> = MutableStateFlow(NoteFormState())
 
         if (title.isNullOrBlank()) {
             formState.value = NoteFormState(titleNoteError = R.string.required_field)
@@ -33,14 +33,17 @@ class MainViewModel @Inject constructor(
         } else if (colorId == null) {
             formState.value = NoteFormState(colorNoteError = R.string.required_field)
         } else {
-            addNote(
-                Note(
-                    noteTitle = title,
-                    color = ColorModel(colorId = colorId),
-                    noteBody = content,
-                    isChecked = switchValue ,
-                )
+            val note = Note(
+                id = if (id ==0) null else id,
+                noteTitle = title,
+                color = ColorModel(colorId = colorId),
+                noteBody = content,
+                isChecked = switchValue,
             )
+            when (isSave) {
+                true -> addNote(note)
+                else -> updateNote(note)
+            }
             formState.value = null
         }
         return formState
@@ -48,7 +51,7 @@ class MainViewModel @Inject constructor(
 
     private fun addNote(note: Note) = viewModelScope.launch { repository.addNote(note) }
     fun deleteNote(note: Note) = viewModelScope.launch { repository.deleteNote(note) }
-    fun updateNote(note: Note) = viewModelScope.launch { repository.updateNote(note) }
+    private fun updateNote(note: Note) = viewModelScope.launch { repository.updateNote(note) }
     fun getNoteById(id: Int) = viewModelScope.launch {
         note = repository.getNoteNoteById(id)
     }

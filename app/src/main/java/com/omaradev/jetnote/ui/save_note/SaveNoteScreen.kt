@@ -1,15 +1,12 @@
 package com.omaradev.jetnote.ui.save_note
 
 import android.annotation.SuppressLint
-import androidx.activity.compose.BackHandler
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -18,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -26,7 +24,6 @@ import androidx.compose.ui.unit.sp
 import com.omaradev.jetnote.MainViewModel
 import com.omaradev.jetnote.R
 import com.omaradev.jetnote.domain.model.color.ColorModel
-import com.omaradev.jetnote.ui.save_note.component.ColorItem
 import com.omaradev.jetnote.ui.utils.ErrorNote
 import com.omaradev.jetnote.ui.utils.InputText
 import com.omaradev.jetnote.ui.utils.PickColorDialog
@@ -39,8 +36,10 @@ import kotlinx.coroutines.launch
     "UnrememberedMutableState"
 )
 @Composable
-fun SaveNoteScreen(onClickOnBackIcon: () -> Unit, viewModel: MainViewModel) {
+fun SaveNoteScreen(onClickOnBackIcon: () -> Unit, viewModel: MainViewModel, noteId: Int) {
     val titleState = mutableStateOf("")
+    val saveState = mutableStateOf("Save")
+    val isSaveState = mutableStateOf(true)
     val contentState = mutableStateOf("")
     val switchState = mutableStateOf(true)
     val colorModelState = mutableStateOf(ColorModel(0, ""))
@@ -49,7 +48,7 @@ fun SaveNoteScreen(onClickOnBackIcon: () -> Unit, viewModel: MainViewModel) {
     val pickColorDialogState =
         rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden,
             confirmValueChange = { it != ModalBottomSheetValue.HalfExpanded })
-
+    val context = LocalContext.current
     val colorsList = remember {
         mutableStateListOf(
             ColorModel(0, "Green", R.color.colorPrimary),
@@ -61,18 +60,30 @@ fun SaveNoteScreen(onClickOnBackIcon: () -> Unit, viewModel: MainViewModel) {
         )
     }
 
+    if (noteId != 0) {
+        viewModel.getNoteById(noteId)
+        viewModel.note.apply {
+            noteTitle?.let { titleState.value = it }
+            isChecked.let { switchState.value = it }
+            noteBody?.let { contentState.value = it }
+            color?.let { colorModelState.value = it }
+            saveState.value = "Update"
+            isSaveState.value = false
+        }
+    }
 
     Scaffold(
         backgroundColor = colorResource(id = R.color.background_color)
     ) {
         Column {
-            TopAppBar(navigationIcon = {
-                IconButton(onClick = onClickOnBackIcon) {
-                    Icon(
-                        imageVector = Icons.Filled.ArrowBack, contentDescription = "Arrow Back"
-                    )
-                }
-            },
+            TopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = onClickOnBackIcon) {
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack, contentDescription = "Arrow Back"
+                        )
+                    }
+                },
                 title = { Text(text = "Save Note") },
                 backgroundColor = colorResource(id = R.color.colorPrimary),
                 contentColor = Color.White
@@ -155,17 +166,23 @@ fun SaveNoteScreen(onClickOnBackIcon: () -> Unit, viewModel: MainViewModel) {
                 onClick = {
                     coroutineScope.launch {
                         viewModel.validateSavingNote(
+                            noteId,
                             titleState.value,
                             contentState.value,
                             colorModelState.value.colorId,
-                            switchState.value
+                            switchState.value,
+                            isSaveState.value
                         ).collect {
                             it?.let { formState.value = it } ?: kotlin.run {
-                                titleState.value = ""
-                                contentState.value = ""
-                                switchState.value = false
-                                colorModelState.value = ColorModel(0, "")
+                                Toast.makeText(context, "Done", Toast.LENGTH_SHORT).show()
+                                if (isSaveState.value) {
+                                    titleState.value = ""
+                                    contentState.value = ""
+                                    switchState.value = false
+                                    colorModelState.value = ColorModel(0, "")
+                                }
                                 formState.value = null
+                                onClickOnBackIcon()
                             }
                         }
                     }
@@ -178,7 +195,7 @@ fun SaveNoteScreen(onClickOnBackIcon: () -> Unit, viewModel: MainViewModel) {
                     contentColor = Color.White
                 )
             ) {
-                Text(text = "Save")
+                Text(text = saveState.value)
             }
         }
 

@@ -1,7 +1,6 @@
 package com.omaradev.jetnote.ui.all_notes
 
 import android.annotation.SuppressLint
-import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,6 +18,7 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import com.omaradev.jetnote.MainViewModel
 import com.omaradev.jetnote.R
+import com.omaradev.jetnote.domain.model.all_notes.Note
 import com.omaradev.jetnote.ui.all_notes.component.NoteItem
 
 @SuppressLint("UnusedMaterialScaffoldPaddingParameter")
@@ -26,9 +26,9 @@ import com.omaradev.jetnote.ui.all_notes.component.NoteItem
 fun AllNotesScreen(
     onOpenNavDrawer: () -> Unit,
     onClickSaveNote: () -> Unit,
+    onClickNoteItem: (Note) -> Unit,
     viewModel: MainViewModel
 ) {
-    val context = LocalContext.current
     val notes = viewModel.getAllNotes().collectAsState(initial = emptyList())
 
     Scaffold(
@@ -59,10 +59,8 @@ fun AllNotesScreen(
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(items = notes.value) { it ->
                     NoteItem(note = it, onClickNote = {
-                        Toast.makeText(context, it.noteTitle, Toast.LENGTH_SHORT).show()
-                    }, onChangeCheckedNote = {
-                        Toast.makeText(context, it.noteTitle, Toast.LENGTH_SHORT).show()
-                    })
+                        onClickNoteItem(it)
+                    }, onChangeCheckedNote = {})
                 }
             }
 
