@@ -5,6 +5,7 @@ buildscript {
         room_version = "2.5.1"
         coroutine_version = "1.7.1"
         hilt_version = "2.44"
+        shimmer_version = "1.0.5"
     }
 }// Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {

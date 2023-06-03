@@ -9,19 +9,18 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import com.omaradev.jetnote.MainViewModel
 import com.omaradev.jetnote.R
 import com.omaradev.jetnote.domain.model.all_notes.Note
 import com.omaradev.jetnote.ui.all_notes.component.NoteItem
+import kotlinx.coroutines.delay
 
-@SuppressLint("UnusedMaterialScaffoldPaddingParameter")
+@SuppressLint("UnusedMaterialScaffoldPaddingParameter", "UnrememberedMutableState")
 @Composable
 fun AllNotesScreen(
     onOpenNavDrawer: () -> Unit,
@@ -30,6 +29,14 @@ fun AllNotesScreen(
     viewModel: MainViewModel
 ) {
     val notes = viewModel.getAllNotes().collectAsState(initial = emptyList())
+
+    var isLoading by remember {
+        mutableStateOf(true)
+    }
+    LaunchedEffect(key1 = true) {
+        delay(5000)
+        isLoading = false
+    }
 
     Scaffold(
         backgroundColor = colorResource(id = R.color.background_color),
@@ -58,9 +65,11 @@ fun AllNotesScreen(
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(items = notes.value) { it ->
-                    NoteItem(note = it, onClickNote = {
-                        onClickNoteItem(it)
-                    }, onChangeCheckedNote = {})
+                    ShimmerNoteItem(isLoading = isLoading) {
+                        NoteItem(note = it, onClickNote = {
+                            onClickNoteItem(it)
+                        }, onChangeCheckedNote = {})
+                    }
                 }
             }
 
